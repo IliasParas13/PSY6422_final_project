@@ -207,7 +207,7 @@ Finally, the Shiny app is brought to life using the shinyApp() function. This co
 shinyApp(ui, server)
 ```
 
-## Future
+## Further improvments
 
 Looking towards future improvements or if time had permitted, an enhancement I would have considered adding a legend to the main interactive map. This addition would help users more intuitively understand the population data being represented, making the application even more user-friendly and informative.
 
