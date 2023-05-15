@@ -4,18 +4,19 @@ author: "220257813"
 date: "2023-05-14"
 output:
   html_document: default
-  pdf_document: default
+runtime: shiny
 ---
 
 ## Questions
+
 How the population changes over the years for every country? How fast the global population rises? What is the function describing the population?
 
----
 
 ## Introduction
+
 This document describes an analysis of world population data. The analysis includes an interactive Shiny application that allows users to explore population data for different years.
 
-The question 
+The question
 
 The data for this analysis were received from [ourworldindata.org](https://ourworldindata.org/world-population-growth). The dataset includes Population data for the years 1950 to 2100 (predictions).
 
@@ -23,7 +24,7 @@ These libraries were used:
 
 * Library `readr` to read CSV files
 * Library `stringr` to manipulate strings, and more specifically, to extract countries with specific string characteristics.
-* Library `dplyr` to manipulate data for example to summarise, arrange, group, etc. 
+* Library `dplyr` to manipulate data for example to summarise, arrange, group, etc.
 * Library `ggplot2` for simple plot
 * Library `plotly` to display a secondary plot in a separate window for easier zoom in.
 * Library `sf` for simple data frame features like read shape file and merge spatial data frame with population data
@@ -42,16 +43,14 @@ library(shiny)   # Interactive window
 ```
 
 ## Load and Prepare Data
+
 First, we load the data and preprocess them for our analysis.
 
-With the library `sf` and the function `st_read` the shape file from the directory was read,
-with the command: `world_sf <- st_read("TM_WORLD_BORDERS_SIMPL-0.3.shp")`
+With the library `sf` and the function `st_read` the shape file from the directory was read, with the command: `world_sf <- st_read("TM_WORLD_BORDERS_SIMPL-0.3.shp")`
 
-Then the data from the CSV file using the library `readr`, taking advantage of the headers:
-`Unmodified_Data <- read.delim("population-and-demography.csv", header = TRUE, sep = ",")`
+Then the data from the CSV file using the library `readr`, taking advantage of the headers: `Unmodified_Data <- read.delim("population-and-demography.csv", header = TRUE, sep = ",")`
 
-These data needed a preparation before use. First of all the data had columns for several of group ages. Keeping the original data in a safe matrix, the unwanted columns were removed (`Population_Data <- Unmodified_Data[ , 1:3]`). Also, to avoid confusions the name of the *Country* column renamed (`colnames(Population_Data)[1] <- "Country"`).
-Before proceeding to the graphs, the first and last year should be found, using `min` and `max` functions, as well as the current year using `Sys.Date()` and the step.
+These data needed a preparation before use. First of all the data had columns for several of group ages. Keeping the original data in a safe matrix, the unwanted columns were removed (`Population_Data <- Unmodified_Data[ , 1:3]`). Also, to avoid confusions the name of the *Country* column renamed (`colnames(Population_Data)[1] <- "Country"`). Before proceeding to the graphs, the first and last year should be found, using `min` and `max` functions, as well as the current year using `Sys.Date()` and the step.
 
 ```{r setup2, include=FALSE}
 # Set working directory and read shapefile
@@ -71,8 +70,8 @@ year_today = as.numeric(format(Sys.Date(), "%Y"))
 ```
 
 ## Total Population by Year
-This data set had also lines with the population of each continent. So, the total population, can be found by using only the population of these lines. Function `grepl` helped for this preparation, as all these lines had "(UN)" at the end of their name.
-Then the sum per each year can easily be found with this command: `Sum_by_Year <- aggregate(Population ~ Year, data = Continents, sum)`.
+
+This data set had also lines with the population of each continent. So, the total population, can be found by using only the population of these lines. Function `grepl` helped for this preparation, as all these lines had "(UN)" at the end of their name. Then the sum per each year can easily be found with this command: `Sum_by_Year <- aggregate(Population ~ Year, data = Continents, sum)`.
 
 This data set contained predictions for the countries' population until year `r year_end`. So, it seems more realistic to create a graph with the total population until `r year_today`.
 
@@ -97,13 +96,17 @@ In this graph can be seen that the total population reached `r pop_today` billio
 ```{r just_for_here2, echo=FALSE}
 equation <- paste("Population =", format((Sum_by_Year[1,2]-pop_today)/(year_start-year_today), digits = 2), "* Year", format(Sum_by_Year[1,2]-Sum_by_Year[1,1]*(Sum_by_Year[1,2]-pop_today)/(year_start-year_today), digits = 5))
 ```
-This graph seems linear, but the way population changes over the centuries could be exponential. This question can not be answered by just these data sets. So, the equation that best describes the population for the years between `r year_start` and `r year_today` is: 
+
+This graph seems linear, but the way population changes over the centuries could be exponential. This question can not be answered by just these data sets. So, the equation that best describes the population for the years between `r year_start` and `r year_today` is:
 
 <p align="center">
+
 `r equation`
+
 </p>
 
 <!-- ## Population Difference per Country -->
+
 <!-- Another interesting graph is the population difference for each country over the years `r year_start` and `r year_end`. Zoom-in needed but one can conclude that the more advanced country the less population difference. -->
 
 ```{r setup4_commented, eval=FALSE, echo=FALSE}
@@ -132,6 +135,7 @@ plotly::ggplotly(p)
 ```
 
 ## Interactive Shiny App
+
 This project was primarily designed to visualize population by country over a specific range of years around the current year. To facilitate interactive exploration of this data, the power of the Shiny package in R was used.
 
 The Shiny application contains two components: a User Interface (UI) and a Server function. The UI, defined in the ui object, is the front-end of the application that users interact with. It includes titles, a slider (`sliderInput("yearInput", ...)`) for selecting the year of interest and a leaflet map visualization (`leafletOutput("map", ...)`) that displays the population data by country for the selected year.
@@ -147,6 +151,7 @@ ui <- fluidPage(
 ```
 
 ## Shiny server
+
 The Server function, on the other hand, is the back-end of the application. It performs the necessary data processing and reactive computations based on user input. When a user moves the slider `yearInput` to select a different year, the Server function self-updates the title to show the total population of the selected year, filters the population data for that year (`Population_Data %>% filter(Year == input$yearInput)`), merges it with the geographic data from the shape file (`merge(world_sf, filtered_data(), by.x = "NAME", by.y = "Country", all.x = TRUE)`), and then updates the map.
 
 Furthermore, inside the observe function the `leaflet` package, and more specifically `leafletProxy("map")` pipeline, uses the `addPolygons` function to add the population data to the map as colored polygons, where the color intensity corresponds to the population magnitude. The map also provides additional information about each country's population when the cursor goes over it, thanks to the `highlightOptions` and `label` arguments in the `addPolygons` function.
@@ -195,15 +200,15 @@ server <- function(input, output, session) {
 ```
 
 ## Run the Shiny app
-Finally, the Shiny app is brought to life using the shinyApp() function.
-This command creates a Shiny app using the defined UI and server. This application is interactive, responding to user inputs and updating the outputs dynamically.
+
+Finally, the Shiny app is brought to life using the shinyApp() function. This command creates a Shiny app using the defined UI and server. This application is interactive, responding to user inputs and updating the outputs dynamically.
 
 ```{r setup7, echo=FALSE}
 shinyApp(ui, server)
 ```
 
+## Future
 
-## Future 
 Looking towards future improvements or if time had permitted, an enhancement I would have considered adding a legend to the main interactive map. This addition would help users more intuitively understand the population data being represented, making the application even more user-friendly and informative.
 
 Additionally, I would dedicate more time to further refining the data. In the current state, there are discrepancies between the country names in the original dataset and the shapefile data. By addressing these inconsistencies and ensuring that country names match across all data sources, the quality and accuracy of the visualizations would be significantly enhanced. This would ensure that no relevant data is unintentionally left out from the visualizations due to mismatched country identifiers.
@@ -211,4 +216,5 @@ Additionally, I would dedicate more time to further refining the data. In the cu
 In future studies, I aim to expand this research by including more data from additional years and centuries. This will help to identify a mathematical equation that can accurately describe human population trends over time.
 
 ## Refference
-Max Roser, Hannah Ritchie, Esteban Ortiz-Ospina and Lucas Rodés-Guirao (2013) - "World Population Growth". Published online at OurWorldInData.org. Retrieved from: 'https://ourworldindata.org/world-population-growth' [Online Resource]
+
+Max Roser, Hannah Ritchie, Esteban Ortiz-Ospina and Lucas Rodés-Guirao (2013) - "World Population Growth". Published online at OurWorldInData.org. Retrieved from: '<https://ourworldindata.org/world-population-growth>' [Online Resource]
